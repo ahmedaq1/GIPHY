@@ -1,72 +1,82 @@
-var topics = ["pizza", "doughnut", "sushi"];
-var GiphCount = 10;
-var cutOffRating = "PG";
+$(document).ready(function() {
 
-function renderButtons() {
-    for (var i = 0; i < topics.length; i++) {
-        var newButton = $("<button>");
-        newButton.addClass("btn");
-        newButton.addClass("food-drinks");
-        newButton.text(topics[i]);
-        $("#button-container").append(newButton);
-    }
-    $(".food-drinks").unbind("click");
+    var topic = ["pizza", "sushi", "pasta"];
 
-    $(".food-drinks").on("click", function() {
-        $(".gif-image").unbind("click");
-        $("#gif-container").empty();
-        $("#gif-container").removeClass("dotted-border");
-        populateGIFContainer($(this).text());
-    });
 
-}
-
-function addButton(show) {
-    if (topics.indexOf(show) === -1) {
-        topics.push(show);
+    function displayGifButtons() {
         $("#button-container").empty();
-        renderButtons();
+        for (var i = 0; i < topic.length; i++) {
+            var button = $("<button>");
+            button.addClass("food");
+            button.addClass("btn btn-primary")
+            button.attr("data-name", topic[i]);
+            button.text(topic[i]);
+            $("#button-container").append(button);
+        }
     }
-}
 
-function populateGIFContainer(show) {
-    $.ajax({
-        url: "https://api.giphy.com/v1/gifs/search?q=" + show +
-            "&api_key=ply5E9bKDzlYiGwQgtC7bpSEyryYg6LM=" + cutOffRating + "&limit=" + numberOfGIFs,
-        method: "GET"
-    }).then(function(response) {
-        response.data.forEach(function(element) {
-            newDiv = $("<div>");
-            newDiv.addClass("individual-gif-container");
-            newDiv.append("<p>Rating: " + element.rating.toUpperCase() + "</p>");
-            var newImage = $("<img src = '" + element.images.fixed_height_still.url + "'>");
-            newImage.addClass("gif-image");
-            newImage.attr("state", "still");
-            newImage.attr("still-data", element.images.fixed_height_still.url);
-            newImage.attr("animated-data", element.images.fixed_height.url);
-            newDiv.append(newImage);
-            $("#gif-container").append(newDiv);
+
+    function addNewButton() {
+        $("#add-foody").on("click", function() {
+            var food = $("#food-input").val().trim();
+            if (food == "") {
+                return false;
+            }
+            topic.push(food);
+
+            displayGifButtons();
+            return false;
         });
+    }
 
-        $("#gif-container").addClass("dotted-border");
-        $(".gif-image").unbind("click");
-        $(".gif-image").on("click", function() {
-            if ($(this).attr("state") === "still") {
-                $(this).attr("state", "animated");
-                $(this).attr("src", $(this).attr("animated-data"));
-            } else {
-                $(this).attr("state", "still");
-                $(this).attr("src", $(this).attr("still-data"));
+
+
+    function displayGifs() {
+        var food = $(this).attr("data-name");
+        var queryURL = "https://api.giphy.com/v1/gifs/search?q=" + food + "&api_key=BkaUZZWcFij6J7AoQj3WtPb1R2p9O6V9&limit=10";
+
+        $.ajax({
+            url: queryURL,
+            method: 'GET'
+        })
+
+        .done(function(response) {
+            console.log(queryURL);
+            $("#gif-container").empty();
+            var results = response.data;
+            if (results == "") {
+                alert("Sorry Giphy for you!");
+            }
+            for (var i = 0; i < results.length; i++) {
+                var giphyDiv = $("<div>");
+                var giphyRating = $("<p>").text("Rating " + results[i].rating);
+                giphyDiv.append(giphyRating);
+                var giphyImage = $("<img>");
+                giphyImage.attr("src", results[i].images.fixed_height_still.url);
+                giphyImage.attr("data-still", results[i].images.fixed_height_still.url);
+                giphyImage.attr("data-animate", results[i].images.fixed_height.url);
+                giphyImage.attr("data-state", "still");
+                giphyImage.addClass("image");
+                giphyDiv.append(giphyImage);
+                $("#gif-container").prepend(giphyDiv);
             }
         });
-    });
-}
+    }
 
-$(document).ready(function() {
-    renderButtons();
-    $("#submit").on("click", function() {
-        event.preventDefault();
-        addButton($("#foods").val().trim());
-        $("#foods").val("");
+    displayGifButtons();
+    addNewButton();
+
+    $(document).on("click", ".food", displayGifs);
+    $(document).on("click", ".image", function() {
+        var state = $(this).attr('data-state');
+        if (state == 'still') {
+            $(this).attr('src', $(this).data('animate'));
+            $(this).attr('data-state', 'animate');
+        } else {
+            $(this).attr('src', $(this).data('still'));
+            $(this).attr('data-state', 'still');
+        }
+
     });
+
 });
